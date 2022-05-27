@@ -1,4 +1,4 @@
-using Pose;
+using Microsoft.QualityTools.Testing.Fakes;
 using SiteActivityReporting.Services;
 using SiteActivityReporting.Services.Models;
 using System;
@@ -9,7 +9,7 @@ namespace SiteActivityReporting.Tests
     public class ActivityTests
     {
         [Fact]
-        public void AddValue_RoundDoubleUp()
+        public void Add_RoundDouble_AddsRundedUp()
         {
             var key = "key1";
             var activityService = new ActivityService();
@@ -19,7 +19,7 @@ namespace SiteActivityReporting.Tests
         }
 
         [Fact]
-        public void AddValue_RoundDoubleDown()
+        public void Add_RoundDouble_AddsRundedDown()
         {
             var key = "key1";
             var activityService = new ActivityService();
@@ -29,41 +29,31 @@ namespace SiteActivityReporting.Tests
         }
 
         [Fact]
-        public void UserCreated()
+        public void Get_HasOldValues_ReturnsOnlyNewValues()
         {
+            var now = DateTime.Now;
             var key = "key1";
             var activityService = new ActivityService();
-
-            activityService.Add(new CreateActivityInput { Key = key, Value = 2 });
-            //activityService.Add(new CreateActivityInput { Key = key, Value = 2 });
-            //activityService.Add(new CreateActivityInput { Key = key, Value = 2 });
+            var totalTests = 4;
+            var testValue = 2;
+            var totalSuccessTests = 3 * testValue;
 
             int val = 0;
 
-            Shim shim = Shim.Replace(() => DateTime.Now).With(() => new DateTime(2022, 05, 26));
-            PoseContext.Isolate(() =>
+            for (int i = 1; i <= totalTests; i++)
             {
-                activityService.Add(new CreateActivityInput { Key = key, Value = 2 });
-                //var val2 = activityService.Total(new GetActivityTotalInput { Key = key }).Value;
-            }, shim);
+                using (ShimsContext.Create())
+                {
+                    System.Fakes.ShimDateTime.NowGet =
+                    () =>
+                    { return now.AddHours(-i * i); };
 
-            //for (int i = 1; i <= 4; i++)
-            //{
-            //    Shim shim = Shim.Replace(() => DateTime.Now).With(() => DateTime.Now.AddHours(-i*i));
-
-            //    PoseContext.Isolate(() =>
-            //    {
-            //        date = DateTime.Now;
-            //        activityService.Add(new CreateActivityInput { Key = key, Value = 2 });
-            //    }, shim);
-            //}
-
-
-            //Assert.Equal(new DateTime(2021, 07, 20), date);
+                    activityService.Add(new CreateActivityInput { Key = key, Value = testValue });
+                }
+            }
 
             val = activityService.Total(new GetActivityTotalInput { Key = key }).Value;
-
-            Assert.Equal(119, val);
+            Assert.Equal(totalSuccessTests, val);
         }
     }
 }
